@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mermaid to PNG Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .container {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        padding: 40px;
+        max-width: 1200px;
+        width: 100%;
+      }
+
+      h1 {
+        color: #333;
+        margin-bottom: 30px;
+        font-size: 28px;
+      }
+
+      .upload-section {
+        margin-bottom: 30px;
+        padding: 30px;
+        border: 2px dashed #ccc;
+        border-radius: 12px;
+        text-align: center;
+        background: #f9f9f9;
+        transition: all 0.3s ease;
+      }
+
+      .upload-section:hover {
+        border-color: #667eea;
+        background: #f0f4ff;
+      }
+
+      .file-input-wrapper {
+        position: relative;
+        display: inline-block;
+      }
+
+      input[type="file"] {
+        display: none;
+      }
+
+      .file-input-label {
+        background: #667eea;
+        color: white;
+        padding: 12px 30px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: background 0.3s ease;
+        display: inline-block;
+      }
+
+      .file-input-label:hover {
+        background: #5568d3;
+      }
+
+      .file-name {
+        margin-top: 15px;
+        color: #666;
+        font-size: 14px;
+      }
+
+      .controls {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+      }
+
+      button {
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      button:hover:not(:disabled) {
+        background: #5568d3;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      }
+
+      button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      .diagram-container {
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 20px;
+        background: white;
+        min-height: 400px;
+        overflow: auto;
+        max-height: 70vh;
+      }
+
+      .message {
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: none;
+      }
+
+      .message.show {
+        display: block;
+      }
+
+      .message.error {
+        background: #fee;
+        border: 1px solid #fcc;
+        color: #c33;
+      }
+
+      .message.success {
+        background: #efe;
+        border: 1px solid #cfc;
+        color: #3c3;
+      }
+
+      .spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 40px auto;
+        display: none;
+      }
+
+      .spinner.show {
+        display: block;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .icon {
+        width: 20px;
+        height: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Mermaid to PNG Converter</h1>
+
+      <div class="message" id="message"></div>
+
+      <div class="upload-section">
+        <div class="file-input-wrapper">
+          <input type="file" id="fileInput" accept=".mmd,.mermaid,.txt" />
+          <label for="fileInput" class="file-input-label">
+            📁 Choose Mermaid File
+          </label>
+        </div>
+        <div class="file-name" id="fileName">No file selected</div>
+      </div>
+
+      <div class="controls">
+        <button id="downloadBtn" disabled>
+          <svg
+            class="icon"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+            />
+          </svg>
+          Download PNG
+        </button>
+      </div>
+
+      <div class="spinner" id="spinner"></div>
+      <div class="diagram-container" id="diagramContainer"></div>
+    </div>
+
+    <script>
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: "default",
+        securityLevel: "loose",
+      });
+
+      const fileInput = document.getElementById("fileInput");
+      const fileName = document.getElementById("fileName");
+      const downloadBtn = document.getElementById("downloadBtn");
+      const diagramContainer = document.getElementById("diagramContainer");
+      const messageDiv = document.getElementById("message");
+      const spinner = document.getElementById("spinner");
+
+      let currentMermaidCode = "";
+
+      function showMessage(text, type) {
+        messageDiv.textContent = text;
+        messageDiv.className = `message show ${type}`;
+        setTimeout(() => {
+          messageDiv.classList.remove("show");
+        }, 5000);
+      }
+
+      fileInput.addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        fileName.textContent = file.name;
+
+        try {
+          spinner.classList.add("show");
+          const text = await file.text();
+          currentMermaidCode = text;
+          await renderDiagram(text);
+          downloadBtn.disabled = false;
+          showMessage("Diagram rendered successfully!", "success");
+        } catch (error) {
+          showMessage(
+            "Error reading or rendering file: " + error.message,
+            "error"
+          );
+          downloadBtn.disabled = true;
+        } finally {
+          spinner.classList.remove("show");
+        }
+      });
+
+      async function renderDiagram(code) {
+        diagramContainer.innerHTML = "";
+        const id = "mermaid-" + Date.now();
+        const { svg } = await mermaid.render(id, code);
+        diagramContainer.innerHTML = svg;
+      }
+
+      downloadBtn.addEventListener("click", () => {
+        const svgElement = diagramContainer.querySelector("svg");
+        if (!svgElement) {
+          showMessage("No diagram to download", "error");
+          return;
+        }
+
+        // Clone the SVG to avoid modifying the original
+        const svgClone = svgElement.cloneNode(true);
+        const svgData = new XMLSerializer().serializeToString(svgClone);
+
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const img = new Image();
+
+        // Convert SVG string to base64 data URL
+        const svgBase64 = btoa(unescape(encodeURIComponent(svgData)));
+        const dataUrl = "data:image/svg+xml;base64," + svgBase64;
+
+        img.onload = () => {
+          // High resolution export
+          const scale = 16;
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+
+          // Enable image smoothing for better quality
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+
+          // White background
+          ctx.fillStyle = "white";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          // Draw the SVG at high resolution
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          // Convert canvas to blob and download
+          canvas.toBlob((blob) => {
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "mermaid-diagram.png";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(a.href), 100);
+            showMessage("PNG downloaded successfully!", "success");
+          }, "image/png");
+        };
+
+        img.onerror = () => {
+          showMessage("Error converting to PNG", "error");
+        };
+
+        img.src = dataUrl;
+      });
+    </script>
+  </body>
+</html>
