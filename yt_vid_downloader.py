@@ -4,22 +4,18 @@ YouTube Video Downloader (using yt-dlp)
 This script allows you to download YouTube videos (or other supported sites by yt-dlp)
 with flexible parameters such as resolution, output format, and download location.
 
-⚡ Requirements:
+Requirements:
     pip install yt-dlp
 
-📌 Usage examples:
+Usage examples:
     # Download a video in 4K (2160p) MP4 format
-    python downloader.py "https://youtube.com/watch?v=XXXX" -r 2160 -m mp4
+    python yt_vid_downloader.py "https://youtube.com/watch?v=XXXX" -r 2160 -m mp4
 
     # Download a video in 1080p MKV format to a custom folder
-    python downloader.py "https://youtube.com/watch?v=XXXX" -r 1080 -m mkv -o my_videos
+    python yt_vid_downloader.py "https://youtube.com/watch?v=XXXX" -r 1080 -m mkv -o my_videos
 
     # Download at best available quality without forcing resolution
-    python downloader.py "https://youtube.com/watch?v=XXXX"
-
-Note:
-    Make sure you only download videos you own or have permission to download.
-    Respect YouTube's Terms of Service.
+    python yt_vid_downloader.py "https://youtube.com/watch?v=XXXX"
 """
 
 import argparse
