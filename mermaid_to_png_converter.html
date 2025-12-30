@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+
 <!--
 Mermaid to PNG converter
 
@@ -10,7 +12,6 @@ Note:
     If you want to increase/decrease the quality of the picture change the "const scale = 16;" to your liking.
 -->
 
-<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -293,7 +294,6 @@ Note:
           return;
         }
 
-        // Clone the SVG to avoid modifying the original
         const svgClone = svgElement.cloneNode(true);
         const svgData = new XMLSerializer().serializeToString(svgClone);
 
@@ -301,28 +301,22 @@ Note:
         const ctx = canvas.getContext("2d");
         const img = new Image();
 
-        // Convert SVG string to base64 data URL
         const svgBase64 = btoa(unescape(encodeURIComponent(svgData)));
         const dataUrl = "data:image/svg+xml;base64," + svgBase64;
 
         img.onload = () => {
-          // High resolution export
           const scale = 16;
           canvas.width = img.width * scale;
           canvas.height = img.height * scale;
 
-          // Enable image smoothing for better quality
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = "high";
 
-          // White background
           ctx.fillStyle = "white";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-          // Draw the SVG at high resolution
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-          // Convert canvas to blob and download
           canvas.toBlob((blob) => {
             const a = document.createElement("a");
             a.href = URL.createObjectURL(blob);

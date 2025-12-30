@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 YouTube Video Downloader (using yt-dlp)
 
@@ -22,7 +23,6 @@ import argparse
 import yt_dlp
 
 def download_video(url, resolution, output_path, merge_format):
-    # Build format string for yt-dlp
     if resolution:
         format_str = f"bestvideo[height<={resolution}]+bestaudio/best[height<={resolution}]"
     else:
