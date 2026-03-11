@@ -1,0 +1,982 @@
+<!doctype html>
+
+<!--
+AI Arena - Model Comparison
+
+This script takes a prompt and sends it to different AI models and compares the output of each of them.
+
+Requirements:
+    You need to serve this page using some kind of local server (e.g. Live Server in VSCode)
+
+Note:
+    You need to provide an API key for each of the models.
+-->
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Arena - Model Comparison</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.21/vue.global.prod.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #0a0a0b;
+        --surface: #111114;
+        --border: #1e1e24;
+        --border-bright: #2e2e38;
+        --text: #e8e8f0;
+        --muted: #5a5a72;
+        --accent: #f0f0f0;
+
+        --claude: #c97b4b;
+        --claude-dim: rgba(201, 123, 75, 0.12);
+        --claude-glow: rgba(201, 123, 75, 0.25);
+
+        --openai: #19c37d;
+        --openai-dim: rgba(25, 195, 125, 0.1);
+        --openai-glow: rgba(25, 195, 125, 0.22);
+
+        --gemini: #4b8ef5;
+        --gemini-dim: rgba(75, 142, 245, 0.1);
+        --gemini-glow: rgba(75, 142, 245, 0.22);
+      }
+
+      html {
+        font-size: 15px;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'DM Sans', sans-serif;
+        font-weight: 300;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.5;
+      }
+
+      #app {
+        position: relative;
+        z-index: 1;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.4rem 2rem;
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        background: rgba(10, 10, 11, 0.92);
+        backdrop-filter: blur(12px);
+        z-index: 100;
+      }
+
+      .logo {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 1.9rem;
+        letter-spacing: 0.08em;
+        color: var(--accent);
+        line-height: 1;
+      }
+      .logo span {
+        color: var(--muted);
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+      }
+
+      .settings-toggle {
+        background: var(--surface);
+        border: 1px solid var(--border-bright);
+        color: var(--muted);
+        padding: 0.45rem 1rem;
+        border-radius: 4px;
+        font-family: 'DM Mono', monospace;
+        font-size: 0.75rem;
+        cursor: pointer;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        transition: all 0.2s;
+      }
+      .settings-toggle:hover {
+        color: var(--text);
+        border-color: var(--border-bright);
+        background: #18181c;
+      }
+
+      .settings-panel {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 1.4rem 2rem;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        animation: slideDown 0.2s ease;
+      }
+
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .key-group label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-family: 'DM Mono', monospace;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.45rem;
+      }
+
+      .key-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+      .dot-claude {
+        background: var(--claude);
+      }
+      .dot-openai {
+        background: var(--openai);
+      }
+      .dot-gemini {
+        background: var(--gemini);
+      }
+
+      .key-input {
+        width: 100%;
+        background: var(--bg);
+        border: 1px solid var(--border-bright);
+        color: var(--text);
+        padding: 0.55rem 0.8rem;
+        border-radius: 4px;
+        font-family: 'DM Mono', monospace;
+        font-size: 0.78rem;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .key-input:focus {
+        border-color: var(--muted);
+      }
+      .key-input::placeholder {
+        color: var(--muted);
+        opacity: 0.5;
+      }
+
+      .prompt-section {
+        padding: 1.6rem 2rem;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .prompt-row {
+        display: flex;
+        gap: 0.8rem;
+        align-items: flex-end;
+      }
+
+      .prompt-wrap {
+        flex: 1;
+        position: relative;
+      }
+
+      textarea.prompt-input {
+        width: 100%;
+        background: var(--surface);
+        border: 1px solid var(--border-bright);
+        color: var(--text);
+        padding: 0.85rem 1rem;
+        border-radius: 6px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.95rem;
+        font-weight: 300;
+        resize: none;
+        outline: none;
+        line-height: 1.6;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s;
+        min-height: 64px;
+        max-height: 200px;
+      }
+      textarea.prompt-input:focus {
+        border-color: #3a3a50;
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.03);
+      }
+      textarea.prompt-input::placeholder {
+        color: var(--muted);
+        opacity: 0.6;
+      }
+
+      .submit-btn {
+        background: var(--accent);
+        color: var(--bg);
+        border: none;
+        padding: 0.8rem 1.8rem;
+        border-radius: 6px;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 1.1rem;
+        letter-spacing: 0.1em;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+        height: fit-content;
+      }
+      .submit-btn:hover:not(:disabled) {
+        background: #fff;
+        transform: translateY(-1px);
+      }
+      .submit-btn:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .model-chips {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.8rem;
+        flex-wrap: wrap;
+      }
+
+      .chip {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.3rem 0.75rem;
+        border-radius: 20px;
+        font-family: 'DM Mono', monospace;
+        font-size: 0.7rem;
+        letter-spacing: 0.05em;
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: all 0.15s;
+        user-select: none;
+      }
+
+      .chip.claude {
+        border-color: var(--claude);
+        color: var(--claude);
+        background: var(--claude-dim);
+      }
+      .chip.openai {
+        border-color: var(--openai);
+        color: var(--openai);
+        background: var(--openai-dim);
+      }
+      .chip.gemini {
+        border-color: var(--gemini);
+        color: var(--gemini);
+        background: var(--gemini-dim);
+      }
+
+      .chip.inactive {
+        opacity: 0.3;
+        filter: grayscale(1);
+      }
+      .chip:hover {
+        opacity: 1;
+        filter: none;
+      }
+
+      .results-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+        gap: 0;
+        min-height: calc(100vh - 260px);
+      }
+
+      .result-col {
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        animation: fadeIn 0.4s ease both;
+      }
+      .result-col:last-child {
+        border-right: none;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .col-header {
+        padding: 1rem 1.4rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: sticky;
+        top: 57px;
+        backdrop-filter: blur(12px);
+        background: rgba(10, 10, 11, 0.85);
+        z-index: 10;
+      }
+
+      .col-header.claude {
+        border-top: 2px solid var(--claude);
+      }
+      .col-header.openai {
+        border-top: 2px solid var(--openai);
+      }
+      .col-header.gemini {
+        border-top: 2px solid var(--gemini);
+      }
+
+      .model-name {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 1.15rem;
+        letter-spacing: 0.12em;
+      }
+      .model-name.claude {
+        color: var(--claude);
+      }
+      .model-name.openai {
+        color: var(--openai);
+      }
+      .model-name.gemini {
+        color: var(--gemini);
+      }
+
+      .model-sub {
+        font-family: 'DM Mono', monospace;
+        font-size: 0.65rem;
+        color: var(--muted);
+        letter-spacing: 0.04em;
+        margin-top: 1px;
+      }
+
+      .status-badge {
+        font-family: 'DM Mono', monospace;
+        font-size: 0.65rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 0.2rem 0.55rem;
+        border-radius: 3px;
+      }
+
+      .status-idle {
+        color: var(--muted);
+      }
+      .status-loading {
+        color: var(--accent);
+        animation: pulse 1.2s ease-in-out infinite;
+      }
+      .status-done {
+        color: var(--openai);
+      }
+      .status-error {
+        color: #f05;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      .col-body {
+        flex: 1;
+        padding: 1.5rem;
+        overflow-y: auto;
+      }
+
+      .md-output {
+        line-height: 1.75;
+        color: var(--text);
+        font-size: 0.92rem;
+      }
+      .md-output h1,
+      .md-output h2,
+      .md-output h3 {
+        font-family: 'Bebas Neue', sans-serif;
+        letter-spacing: 0.08em;
+        margin: 1.4rem 0 0.6rem;
+        line-height: 1.2;
+      }
+      .md-output h1 {
+        font-size: 1.8rem;
+      }
+      .md-output h2 {
+        font-size: 1.35rem;
+      }
+      .md-output h3 {
+        font-size: 1.1rem;
+        color: var(--muted);
+      }
+      .md-output p {
+        margin-bottom: 0.9rem;
+      }
+      .md-output ul,
+      .md-output ol {
+        padding-left: 1.4rem;
+        margin-bottom: 0.9rem;
+      }
+      .md-output li {
+        margin-bottom: 0.3rem;
+      }
+      .md-output code {
+        font-family: 'DM Mono', monospace;
+        font-size: 0.82em;
+        background: var(--border);
+        padding: 0.15em 0.45em;
+        border-radius: 3px;
+        color: var(--accent);
+      }
+      .md-output pre {
+        background: #0d0d10;
+        border: 1px solid var(--border-bright);
+        border-radius: 6px;
+        padding: 1rem;
+        overflow-x: auto;
+        margin-bottom: 1rem;
+      }
+      .md-output pre code {
+        background: none;
+        padding: 0;
+        font-size: 0.83rem;
+        color: #b8c4d8;
+      }
+      .md-output blockquote {
+        border-left: 2px solid var(--border-bright);
+        padding-left: 1rem;
+        color: var(--muted);
+        margin-bottom: 0.9rem;
+      }
+      .md-output strong {
+        font-weight: 500;
+        color: #fff;
+      }
+      .md-output a {
+        color: #7ba7f7;
+      }
+      .md-output table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-bottom: 1rem;
+        font-size: 0.85rem;
+      }
+      .md-output th,
+      .md-output td {
+        border: 1px solid var(--border-bright);
+        padding: 0.45rem 0.7rem;
+        text-align: left;
+      }
+      .md-output th {
+        background: var(--border);
+        color: var(--accent);
+        font-weight: 500;
+      }
+      .md-output hr {
+        border: none;
+        border-top: 1px solid var(--border);
+        margin: 1.4rem 0;
+      }
+
+      .skeleton-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 0.7rem;
+        padding-top: 0.3rem;
+      }
+      .skel {
+        height: 14px;
+        border-radius: 3px;
+        background: linear-gradient(
+          90deg,
+          var(--border) 25%,
+          var(--border-bright) 50%,
+          var(--border) 75%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 1.4s infinite;
+      }
+      .skel.w90 {
+        width: 90%;
+      }
+      .skel.w70 {
+        width: 70%;
+      }
+      .skel.w80 {
+        width: 80%;
+      }
+      .skel.w55 {
+        width: 55%;
+      }
+      .skel.h20 {
+        height: 20px;
+      }
+
+      @keyframes shimmer {
+        from {
+          background-position: 200% 0;
+        }
+        to {
+          background-position: -200% 0;
+        }
+      }
+
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 240px;
+        gap: 0.6rem;
+        color: var(--muted);
+        text-align: center;
+      }
+      .empty-glyph {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 3.5rem;
+        opacity: 0.12;
+        letter-spacing: 0.1em;
+        line-height: 1;
+      }
+      .empty-label {
+        font-family: 'DM Mono', monospace;
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        opacity: 0.4;
+      }
+
+      .error-box {
+        background: rgba(255, 0, 80, 0.06);
+        border: 1px solid rgba(255, 0, 80, 0.2);
+        border-radius: 6px;
+        padding: 1rem;
+        font-family: 'DM Mono', monospace;
+        font-size: 0.78rem;
+        color: #f05;
+        line-height: 1.6;
+      }
+
+      .timing {
+        font-family: 'DM Mono', monospace;
+        font-size: 0.62rem;
+        color: var(--muted);
+        letter-spacing: 0.04em;
+      }
+
+      .copy-btn {
+        background: none;
+        border: 1px solid var(--border-bright);
+        color: var(--muted);
+        padding: 0.25rem 0.6rem;
+        border-radius: 3px;
+        font-family: 'DM Mono', monospace;
+        font-size: 0.62rem;
+        cursor: pointer;
+        letter-spacing: 0.05em;
+        transition: all 0.15s;
+      }
+      .copy-btn:hover {
+        color: var(--text);
+        border-color: var(--muted);
+      }
+
+      ::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border-bright);
+        border-radius: 3px;
+      }
+
+      @media (max-width: 900px) {
+        .results-grid {
+          grid-template-columns: 1fr;
+        }
+        .result-col {
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+        }
+        .settings-panel {
+          grid-template-columns: 1fr;
+        }
+        header {
+          padding: 1rem;
+        }
+        .prompt-section {
+          padding: 1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <div class="logo">AI <span>/</span> ARENA</div>
+        <div class="header-actions">
+          <button class="settings-toggle" @click="showSettings = !showSettings">
+            {{ showSettings ? '✕ CLOSE' : '⚙ API KEYS' }}
+          </button>
+        </div>
+      </header>
+
+      <div class="settings-panel" v-if="showSettings">
+        <div class="key-group">
+          <label><span class="key-dot dot-claude"></span> Anthropic Key</label>
+          <input
+            class="key-input"
+            type="password"
+            v-model="keys.claude"
+            @change="saveKeys"
+            placeholder="sk-ant-api03-..."
+          />
+        </div>
+        <div class="key-group">
+          <label><span class="key-dot dot-openai"></span> OpenAI Key</label>
+          <input
+            class="key-input"
+            type="password"
+            v-model="keys.openai"
+            @change="saveKeys"
+            placeholder="sk-proj-..."
+          />
+        </div>
+        <div class="key-group">
+          <label><span class="key-dot dot-gemini"></span> Gemini Key</label>
+          <input
+            class="key-input"
+            type="password"
+            v-model="keys.gemini"
+            @change="saveKeys"
+            placeholder="AIza..."
+          />
+        </div>
+      </div>
+
+      <div class="prompt-section">
+        <div class="prompt-row">
+          <div class="prompt-wrap">
+            <textarea
+              class="prompt-input"
+              v-model="prompt"
+              placeholder="Enter your prompt — all active models will respond simultaneously…"
+              rows="2"
+              @keydown.meta.enter="submit"
+              @keydown.ctrl.enter="submit"
+              @input="autoResize"
+              ref="ta"
+            ></textarea>
+          </div>
+          <button class="submit-btn" @click="submit" :disabled="isLoading || !prompt.trim()">
+            SEND
+          </button>
+        </div>
+        <div class="model-chips">
+          <div
+            v-for="m in models"
+            :key="m.id"
+            class="chip"
+            :class="[m.id, { inactive: !m.active }]"
+            @click="m.active = !m.active"
+          >
+            <span>{{ m.active ? '✓' : '○' }}</span> {{ m.label }}
+          </div>
+        </div>
+      </div>
+
+      <div class="results-grid">
+        <div
+          v-for="m in activeModels"
+          :key="m.id"
+          class="result-col"
+          :style="{ animationDelay: m.delay + 'ms' }"
+        >
+          <div class="col-header" :class="m.id">
+            <div>
+              <div class="model-name" :class="m.id">{{ m.label }}</div>
+              <div class="model-sub">{{ m.modelId }}</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.7rem">
+              <span class="timing" v-if="m.timing">{{ m.timing }}s</span>
+              <button class="copy-btn" v-if="m.result" @click="copy(m)">COPY</button>
+              <span class="status-badge" :class="'status-' + m.status">
+                {{ statusLabel(m.status) }}
+              </span>
+            </div>
+          </div>
+          <div class="col-body">
+            <div class="empty-state" v-if="m.status === 'idle'">
+              <div class="empty-glyph">{{ m.glyph }}</div>
+              <div class="empty-label">Awaiting prompt</div>
+            </div>
+            <div class="skeleton-wrap" v-else-if="m.status === 'loading'">
+              <div class="skel h20 w90"></div>
+              <div class="skel w80"></div>
+              <div class="skel w70"></div>
+              <div class="skel w90"></div>
+              <div class="skel w55"></div>
+              <div class="skel w80" style="margin-top: 0.4rem"></div>
+              <div class="skel w90"></div>
+              <div class="skel w70"></div>
+            </div>
+            <div class="error-box" v-else-if="m.status === 'error'">
+              <strong>Error</strong><br />{{ m.error }}
+            </div>
+            <div class="md-output" v-else-if="m.result" v-html="renderMd(m.result)"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const { createApp, ref, computed, nextTick } = Vue
+
+      createApp({
+        setup() {
+          const showSettings = ref(false)
+          const prompt = ref('')
+          const ta = ref(null)
+          const isLoading = ref(false)
+
+          const keys = ref({
+            claude: localStorage.getItem('ak_claude') || '',
+            openai: localStorage.getItem('ak_openai') || '',
+            gemini: localStorage.getItem('ak_gemini') || '',
+          })
+
+          function saveKeys() {
+            localStorage.setItem('ak_claude', keys.value.claude)
+            localStorage.setItem('ak_openai', keys.value.openai)
+            localStorage.setItem('ak_gemini', keys.value.gemini)
+          }
+
+          const models = ref([
+            {
+              id: 'claude',
+              label: 'Claude',
+              modelId: 'claude-opus-4-5',
+              active: true,
+              glyph: 'C',
+              delay: 0,
+              status: 'idle',
+              result: null,
+              error: null,
+              timing: null,
+            },
+            {
+              id: 'openai',
+              label: 'ChatGPT',
+              modelId: 'gpt-4o',
+              active: true,
+              glyph: 'G',
+              delay: 60,
+              status: 'idle',
+              result: null,
+              error: null,
+              timing: null,
+            },
+            {
+              id: 'gemini',
+              label: 'Gemini',
+              modelId: 'gemini-2.0-flash',
+              active: true,
+              glyph: 'G',
+              delay: 120,
+              status: 'idle',
+              result: null,
+              error: null,
+              timing: null,
+            },
+          ])
+
+          const activeModels = computed(() => models.value.filter((m) => m.active))
+
+          function statusLabel(s) {
+            return { idle: '—', loading: 'THINKING', done: 'DONE', error: 'ERROR' }[s] || s
+          }
+
+          function renderMd(text) {
+            return marked.parse(text || '')
+          }
+
+          function autoResize(e) {
+            const el = e.target
+            el.style.height = 'auto'
+            el.style.height = Math.min(el.scrollHeight, 200) + 'px'
+          }
+
+          async function callClaude(p, key) {
+            const res = await fetch('https://api.anthropic.com/v1/messages', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': key,
+                'anthropic-version': '2023-06-01',
+                'anthropic-dangerous-direct-browser-access': 'true',
+              },
+              body: JSON.stringify({
+                model: 'claude-opus-4-5',
+                max_tokens: 2048,
+                messages: [{ role: 'user', content: p }],
+              }),
+            })
+            if (!res.ok) {
+              const e = await res.json()
+              throw new Error(e.error?.message || res.statusText)
+            }
+            const data = await res.json()
+            return data.content[0].text
+          }
+
+          async function callOpenAI(p, key) {
+            const res = await fetch('https://api.openai.com/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${key}`,
+              },
+              body: JSON.stringify({
+                model: 'gpt-4o',
+                messages: [{ role: 'user', content: p }],
+              }),
+            })
+            if (!res.ok) {
+              const e = await res.json()
+              throw new Error(e.error?.message || res.statusText)
+            }
+            const data = await res.json()
+            return data.choices[0].message.content
+          }
+
+          async function callGemini(p, key) {
+            const res = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: p }] }] }),
+              },
+            )
+            if (!res.ok) {
+              const e = await res.json()
+              throw new Error(e.error?.message || res.statusText)
+            }
+            const data = await res.json()
+            return data.candidates[0].content.parts[0].text
+          }
+
+          const callers = { claude: callClaude, openai: callOpenAI, gemini: callGemini }
+
+          async function submit() {
+            const p = prompt.value.trim()
+            if (!p || isLoading.value) return
+
+            const active = models.value.filter((m) => m.active)
+            if (!active.length) return
+
+            for (const m of active) {
+              if (!keys.value[m.id]) {
+                m.status = 'error'
+                m.error = `No API key set. Click ⚙ API KEYS to add your ${m.label} key.`
+              } else {
+                m.status = 'loading'
+                m.result = null
+                m.error = null
+                m.timing = null
+              }
+            }
+
+            isLoading.value = true
+            if (!showSettings.value && active.some((m) => m.status === 'error')) {
+              showSettings.value = true
+            }
+
+            const tasks = active
+              .filter((m) => m.status === 'loading')
+              .map(async (m) => {
+                const t0 = Date.now()
+                try {
+                  const text = await callers[m.id](p, keys.value[m.id])
+                  m.result = text
+                  m.status = 'done'
+                  m.timing = ((Date.now() - t0) / 1000).toFixed(1)
+                } catch (err) {
+                  m.status = 'error'
+                  m.error = err.message
+                }
+              })
+
+            await Promise.allSettled(tasks)
+            isLoading.value = false
+          }
+
+          function copy(m) {
+            navigator.clipboard.writeText(m.result || '')
+          }
+
+          return {
+            showSettings,
+            prompt,
+            ta,
+            isLoading,
+            keys,
+            saveKeys,
+            models,
+            activeModels,
+            statusLabel,
+            renderMd,
+            autoResize,
+            submit,
+            copy,
+          }
+        },
+      }).mount('#app')
+    </script>
+  </body>
+</html>

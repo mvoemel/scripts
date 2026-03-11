@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 
 <!--
 Mermaid to PNG converter
@@ -6,7 +6,7 @@ Mermaid to PNG converter
 This script allows you to convert .mermaid files into png files using a website.
 
 Requirements:
-    You need to server this page using some kind of local server (e.g. Live Server in VSCode)
+    You need to serve this page using some kind of local server (e.g. Live Server in VSCode)
 
 Note:
     If you want to increase/decrease the quality of the picture change the "const scale = 16;" to your liking.
@@ -26,8 +26,9 @@ Note:
       }
 
       body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          Oxygen, Ubuntu, Cantarell, sans-serif;
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
+          sans-serif;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         min-height: 100vh;
         padding: 20px;
@@ -71,7 +72,7 @@ Note:
         display: inline-block;
       }
 
-      input[type="file"] {
+      input[type='file'] {
         display: none;
       }
 
@@ -202,21 +203,14 @@ Note:
       <div class="upload-section">
         <div class="file-input-wrapper">
           <input type="file" id="fileInput" accept=".mmd,.mermaid,.txt" />
-          <label for="fileInput" class="file-input-label">
-            📁 Choose Mermaid File
-          </label>
+          <label for="fileInput" class="file-input-label"> 📁 Choose Mermaid File </label>
         </div>
         <div class="file-name" id="fileName">No file selected</div>
       </div>
 
       <div class="controls">
         <button id="downloadBtn" disabled>
-          <svg
-            class="icon"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
@@ -235,106 +229,103 @@ Note:
     <script>
       mermaid.initialize({
         startOnLoad: false,
-        theme: "default",
-        securityLevel: "loose",
-      });
+        theme: 'default',
+        securityLevel: 'loose',
+      })
 
-      const fileInput = document.getElementById("fileInput");
-      const fileName = document.getElementById("fileName");
-      const downloadBtn = document.getElementById("downloadBtn");
-      const diagramContainer = document.getElementById("diagramContainer");
-      const messageDiv = document.getElementById("message");
-      const spinner = document.getElementById("spinner");
+      const fileInput = document.getElementById('fileInput')
+      const fileName = document.getElementById('fileName')
+      const downloadBtn = document.getElementById('downloadBtn')
+      const diagramContainer = document.getElementById('diagramContainer')
+      const messageDiv = document.getElementById('message')
+      const spinner = document.getElementById('spinner')
 
-      let currentMermaidCode = "";
+      let currentMermaidCode = ''
 
       function showMessage(text, type) {
-        messageDiv.textContent = text;
-        messageDiv.className = `message show ${type}`;
+        messageDiv.textContent = text
+        messageDiv.className = `message show ${type}`
         setTimeout(() => {
-          messageDiv.classList.remove("show");
-        }, 5000);
+          messageDiv.classList.remove('show')
+        }, 5000)
       }
 
-      fileInput.addEventListener("change", async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+      fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0]
+        if (!file) return
 
-        fileName.textContent = file.name;
+        fileName.textContent = file.name
 
         try {
-          spinner.classList.add("show");
-          const text = await file.text();
-          currentMermaidCode = text;
-          await renderDiagram(text);
-          downloadBtn.disabled = false;
-          showMessage("Diagram rendered successfully!", "success");
+          spinner.classList.add('show')
+          const text = await file.text()
+          currentMermaidCode = text
+          await renderDiagram(text)
+          downloadBtn.disabled = false
+          showMessage('Diagram rendered successfully!', 'success')
         } catch (error) {
-          showMessage(
-            "Error reading or rendering file: " + error.message,
-            "error"
-          );
-          downloadBtn.disabled = true;
+          showMessage('Error reading or rendering file: ' + error.message, 'error')
+          downloadBtn.disabled = true
         } finally {
-          spinner.classList.remove("show");
+          spinner.classList.remove('show')
         }
-      });
+      })
 
       async function renderDiagram(code) {
-        diagramContainer.innerHTML = "";
-        const id = "mermaid-" + Date.now();
-        const { svg } = await mermaid.render(id, code);
-        diagramContainer.innerHTML = svg;
+        diagramContainer.innerHTML = ''
+        const id = 'mermaid-' + Date.now()
+        const { svg } = await mermaid.render(id, code)
+        diagramContainer.innerHTML = svg
       }
 
-      downloadBtn.addEventListener("click", () => {
-        const svgElement = diagramContainer.querySelector("svg");
+      downloadBtn.addEventListener('click', () => {
+        const svgElement = diagramContainer.querySelector('svg')
         if (!svgElement) {
-          showMessage("No diagram to download", "error");
-          return;
+          showMessage('No diagram to download', 'error')
+          return
         }
 
-        const svgClone = svgElement.cloneNode(true);
-        const svgData = new XMLSerializer().serializeToString(svgClone);
+        const svgClone = svgElement.cloneNode(true)
+        const svgData = new XMLSerializer().serializeToString(svgClone)
 
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        const img = new Image();
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        const img = new Image()
 
-        const svgBase64 = btoa(unescape(encodeURIComponent(svgData)));
-        const dataUrl = "data:image/svg+xml;base64," + svgBase64;
+        const svgBase64 = btoa(unescape(encodeURIComponent(svgData)))
+        const dataUrl = 'data:image/svg+xml;base64,' + svgBase64
 
         img.onload = () => {
-          const scale = 16;
-          canvas.width = img.width * scale;
-          canvas.height = img.height * scale;
+          const scale = 16
+          canvas.width = img.width * scale
+          canvas.height = img.height * scale
 
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = "high";
+          ctx.imageSmoothingEnabled = true
+          ctx.imageSmoothingQuality = 'high'
 
-          ctx.fillStyle = "white";
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = 'white'
+          ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
 
           canvas.toBlob((blob) => {
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = "mermaid-diagram.png";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            setTimeout(() => URL.revokeObjectURL(a.href), 100);
-            showMessage("PNG downloaded successfully!", "success");
-          }, "image/png");
-        };
+            const a = document.createElement('a')
+            a.href = URL.createObjectURL(blob)
+            a.download = 'mermaid-diagram.png'
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+            setTimeout(() => URL.revokeObjectURL(a.href), 100)
+            showMessage('PNG downloaded successfully!', 'success')
+          }, 'image/png')
+        }
 
         img.onerror = () => {
-          showMessage("Error converting to PNG", "error");
-        };
+          showMessage('Error converting to PNG', 'error')
+        }
 
-        img.src = dataUrl;
-      });
+        img.src = dataUrl
+      })
     </script>
   </body>
 </html>

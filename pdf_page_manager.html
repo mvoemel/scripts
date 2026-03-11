@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 
 <!--
 PDF Page Manager
@@ -6,7 +6,7 @@ PDF Page Manager
 This script allows you to upload multiple pdfs and then reorder and delete pages.
 
 Requirements:
-    You need to server this page using some kind of local server (e.g. Live Server in VSCode)
+    You need to serve this page using some kind of local server (e.g. Live Server in VSCode)
 -->
 
 <html lang="en">
@@ -22,8 +22,7 @@ Requirements:
       }
 
       body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         background-color: #f9fafb;
         padding: 2rem;
         min-height: 100vh;
@@ -86,7 +85,7 @@ Requirements:
         cursor: not-allowed;
       }
 
-      input[type="file"] {
+      input[type='file'] {
         display: none;
       }
 
@@ -209,8 +208,7 @@ Requirements:
     <div class="container">
       <h1>PDF Page Manager</h1>
       <p class="subtitle">
-        Upload PDFs, reorder pages, delete unwanted pages, and merge into one
-        file
+        Upload PDFs, reorder pages, delete unwanted pages, and merge into one file
       </p>
 
       <div class="controls">
@@ -253,27 +251,27 @@ Requirements:
 
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script>
-      let pages = [];
-      let draggedIndex = null;
+      let pages = []
+      let draggedIndex = null
 
-      const fileInput = document.getElementById("fileInput");
-      const downloadBtn = document.getElementById("downloadBtn");
-      const contentArea = document.getElementById("contentArea");
+      const fileInput = document.getElementById('fileInput')
+      const downloadBtn = document.getElementById('downloadBtn')
+      const contentArea = document.getElementById('contentArea')
 
-      fileInput.addEventListener("change", handleFileUpload);
-      downloadBtn.addEventListener("click", mergePDFs);
+      fileInput.addEventListener('change', handleFileUpload)
+      downloadBtn.addEventListener('click', mergePDFs)
 
       async function handleFileUpload(e) {
-        const files = Array.from(e.target.files);
+        const files = Array.from(e.target.files)
 
         for (const file of files) {
-          if (file.type === "application/pdf") {
-            const arrayBuffer = await file.arrayBuffer();
-            const uint8Array = new Uint8Array(arrayBuffer);
+          if (file.type === 'application/pdf') {
+            const arrayBuffer = await file.arrayBuffer()
+            const uint8Array = new Uint8Array(arrayBuffer)
 
             try {
-              const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
-              const pageCount = pdfDoc.getPageCount();
+              const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer)
+              const pageCount = pdfDoc.getPageCount()
 
               for (let i = 0; i < pageCount; i++) {
                 pages.push({
@@ -282,17 +280,17 @@ Requirements:
                   pageNumber: i + 1,
                   data: uint8Array,
                   totalPages: pageCount,
-                });
+                })
               }
             } catch (error) {
-              console.error("Error loading PDF:", error);
-              alert("Error loading PDF: " + file.name);
+              console.error('Error loading PDF:', error)
+              alert('Error loading PDF: ' + file.name)
             }
           }
         }
 
-        fileInput.value = "";
-        renderPages();
+        fileInput.value = ''
+        renderPages()
       }
 
       function renderPages() {
@@ -306,32 +304,32 @@ Requirements:
                         </svg>
                         <p>No pages loaded. Upload PDF files to get started.</p>
                     </div>
-                `;
-          downloadBtn.disabled = true;
+                `
+          downloadBtn.disabled = true
         } else {
-          const plural = pages.length !== 1 ? "s" : "";
+          const plural = pages.length !== 1 ? 's' : ''
           contentArea.innerHTML = `
                     <div class="content-area">
                         <div class="page-count">${pages.length} page${plural} loaded. Drag to reorder.</div>
                         <div class="pages-grid" id="pagesGrid"></div>
                     </div>
-                `;
+                `
 
-          const grid = document.getElementById("pagesGrid");
+          const grid = document.getElementById('pagesGrid')
           pages.forEach((page, index) => {
-            const card = createPageCard(page, index);
-            grid.appendChild(card);
-          });
+            const card = createPageCard(page, index)
+            grid.appendChild(card)
+          })
 
-          downloadBtn.disabled = false;
+          downloadBtn.disabled = false
         }
       }
 
       function createPageCard(page, index) {
-        const card = document.createElement("div");
-        card.className = "page-card";
-        card.draggable = true;
-        card.dataset.index = index;
+        const card = document.createElement('div')
+        card.className = 'page-card'
+        card.draggable = true
+        card.dataset.index = index
 
         card.innerHTML = `
                 <div class="page-header">
@@ -343,9 +341,7 @@ Requirements:
                         <circle cx="15" cy="12" r="1"></circle>
                         <circle cx="15" cy="19" r="1"></circle>
                     </svg>
-                    <button class="delete-btn" onclick="deletePage('${
-                      page.id
-                    }')">
+                    <button class="delete-btn" onclick="deletePage('${page.id}')">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="3 6 5 6 21 6"></polyline>
                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -357,95 +353,91 @@ Requirements:
                     <div class="page-label">Page Preview</div>
                 </div>
                 <div class="page-info">
-                    <div class="file-name" title="${page.fileName}">${
-          page.fileName
-        }</div>
+                    <div class="file-name" title="${page.fileName}">${page.fileName}</div>
                     <div>Page ${page.pageNumber} of ${page.totalPages}</div>
                 </div>
-            `;
+            `
 
-        card.addEventListener("dragstart", handleDragStart);
-        card.addEventListener("dragover", handleDragOver);
-        card.addEventListener("dragend", handleDragEnd);
+        card.addEventListener('dragstart', handleDragStart)
+        card.addEventListener('dragover', handleDragOver)
+        card.addEventListener('dragend', handleDragEnd)
 
-        return card;
+        return card
       }
 
       function handleDragStart(e) {
-        draggedIndex = parseInt(e.target.dataset.index);
-        e.target.classList.add("dragging");
+        draggedIndex = parseInt(e.target.dataset.index)
+        e.target.classList.add('dragging')
       }
 
       function handleDragOver(e) {
-        e.preventDefault();
-        const targetIndex = parseInt(e.currentTarget.dataset.index);
+        e.preventDefault()
+        const targetIndex = parseInt(e.currentTarget.dataset.index)
 
-        if (draggedIndex === null || draggedIndex === targetIndex) return;
+        if (draggedIndex === null || draggedIndex === targetIndex) return
 
-        const newPages = [...pages];
-        const draggedPage = newPages[draggedIndex];
-        newPages.splice(draggedIndex, 1);
-        newPages.splice(targetIndex, 0, draggedPage);
+        const newPages = [...pages]
+        const draggedPage = newPages[draggedIndex]
+        newPages.splice(draggedIndex, 1)
+        newPages.splice(targetIndex, 0, draggedPage)
 
-        pages = newPages;
-        draggedIndex = targetIndex;
-        renderPages();
+        pages = newPages
+        draggedIndex = targetIndex
+        renderPages()
       }
 
       function handleDragEnd(e) {
-        e.target.classList.remove("dragging");
-        draggedIndex = null;
+        e.target.classList.remove('dragging')
+        draggedIndex = null
       }
 
       function deletePage(id) {
-        pages = pages.filter((p) => p.id !== id);
-        renderPages();
+        pages = pages.filter((p) => p.id !== id)
+        renderPages()
       }
 
       async function mergePDFs() {
         if (pages.length === 0) {
-          alert("Please upload some PDFs first");
-          return;
+          alert('Please upload some PDFs first')
+          return
         }
 
         try {
-          const mergedPdf = await PDFLib.PDFDocument.create();
-          const fileCache = new Map();
+          const mergedPdf = await PDFLib.PDFDocument.create()
+          const fileCache = new Map()
 
           for (const page of pages) {
-            let sourcePdf;
-            const cacheKey = page.fileName;
+            let sourcePdf
+            const cacheKey = page.fileName
 
             if (fileCache.has(cacheKey)) {
-              sourcePdf = fileCache.get(cacheKey);
+              sourcePdf = fileCache.get(cacheKey)
             } else {
-              sourcePdf = await PDFLib.PDFDocument.load(page.data);
-              fileCache.set(cacheKey, sourcePdf);
+              sourcePdf = await PDFLib.PDFDocument.load(page.data)
+              fileCache.set(cacheKey, sourcePdf)
             }
 
-            const [copiedPage] = await mergedPdf.copyPages(sourcePdf, [
-              page.pageNumber - 1,
-            ]);
-            mergedPdf.addPage(copiedPage);
+            const [copiedPage] = await mergedPdf.copyPages(sourcePdf, [page.pageNumber - 1])
+            mergedPdf.addPage(copiedPage)
           }
 
-          const pdfBytes = await mergedPdf.save();
-          const blob = new Blob([pdfBytes], { type: "application/pdf" });
-          const url = URL.createObjectURL(blob);
+          const pdfBytes = await mergedPdf.save()
+          const blob = new Blob([pdfBytes], { type: 'application/pdf' })
+          const url = URL.createObjectURL(blob)
 
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "merged.pdf";
-          a.click();
+          const a = document.createElement('a')
+          a.href = url
+          a.download = 'merged.pdf'
+          a.click()
 
-          URL.revokeObjectURL(url);
+          URL.revokeObjectURL(url)
         } catch (error) {
-          alert("Error merging PDFs: " + error.message);
-          console.error(error);
+          alert('Error merging PDFs: ' + error.message)
+          console.error(error)
         }
       }
 
-      renderPages();
+      renderPages()
     </script>
   </body>
 </html>
